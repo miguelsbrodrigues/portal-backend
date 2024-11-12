@@ -1,8 +1,31 @@
-# 🏢 Company Group Portal Backend Setup Guide
+# Company Group Portal Backend Documentation
+This document provides a comprehensive overview of the Company Group Portal Backend, detailing its purpose, architecture, setup instructions, testing strategies, and deployment guidelines.
 
-This guide will help you set up the Company Group Portal Backend project, which uses **Next.js**, **Prisma**, **PostgreSQL**, **Cerbos** for Role-Based Access Control (RBAC), and **Zod** for data validation. Follow these steps to get started quickly.
+Table of Contents
+Project Overview
+Architecture
+Setup Instructions
 
-## Steps to Start the Backend Project
+# Project Overview
+The Company Group Portal Backend is designed to manage and streamline various administrative and operational tasks within a company. It provides APIs and services to handle user management, role-based access control, data validation, and other core functionalities essential for company operations.
+
+# Architecture
+The backend is built using a modern stack to ensure scalability, maintainability, and performance. The key components include:
+
+Next.js: A React-based framework that enables server-side rendering and static site generation, facilitating the development of web applications with enhanced performance and SEO capabilities.
+
+Prisma: An ORM (Object-Relational Mapping) tool that simplifies database interactions and migrations, providing a type-safe database client.
+
+PostgreSQL: A powerful, open-source relational database system known for its robustness and performance.
+
+Cerbos: A scalable, open-source authorization layer that provides role-based access control (RBAC) to secure the application.
+
+Zod: A TypeScript-first schema declaration and validation library, ensuring data integrity and type safety.
+
+The application follows a modular architecture, separating concerns into distinct modules for user management, access control, and data handling. This structure enhances maintainability and scalability.
+
+# Setup Instructions
+## Steps to Start
 
 ### 1. Project Folder Structure
 
