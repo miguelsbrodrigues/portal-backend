@@ -1,10 +1,10 @@
 # Company Group Portal Backend Documentation
 This document provides a comprehensive overview of the Company Group Portal Backend, detailing its purpose, architecture, setup instructions, testing strategies, and deployment guidelines.
 
-Table of Contents
-Project Overview
-Architecture
-Setup Instructions
+##Table of Contents
+##Project Overview
+##Architecture
+##Setup Instructions
 
 # Project Overview
 The Company Group Portal Backend is designed to manage and streamline various administrative and operational tasks within a company. It provides APIs and services to handle user management, role-based access control, data validation, and other core functionalities essential for company operations.
