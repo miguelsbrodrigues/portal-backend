@@ -21,9 +21,9 @@ company-group-portal/
 │   └── api/               # API routes for handling requests
 ├── .env                   # Environment variables
 ├── docker-compose.yml     # Docker Compose configuration
-├── package.json           # Project dependencies and scripts
-├── config.js              # Centralized configuration file
-└── README.md              # Project documentation
+├── package.json          # Project dependencies and scripts
+├── config.js             # Centralized configuration file
+└── README.md             # Project documentation
 ```
 
 ### 2. Install Dependencies
@@ -60,36 +60,92 @@ company-group-portal/
 
 ### 6. Create Initial Migrations for RBAC
 
-- Define models for roles, users, and permissions in `schema.prisma`:
+Open `schema.prisma` and define models for users, departments, and permissions:
+
 
   ```prisma
   model User {
-    id        Int      @id @default(autoincrement())
-    email     String   @unique
-    password  String
-    roleId    Int
-    role      Role     @relation(fields: [roleId], references: [id])
-  }
+  id              Int               @id @default(autoincrement())
+  email           String            @unique
+  password        String
+  userCompanies   UserCompany[]     // Relationship with companies
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
 
-  model Role {
-    id          Int          @id @default(autoincrement())
-    name        String       @unique
-    permissions Permission[]
-    users       User[]
-  }
+model Company {
+  id              Int               @id @default(autoincrement())
+  name            String            @unique
+  departments     Department[]
+  userCompanies   UserCompany[]     // Users in this company
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
 
-  model Permission {
-    id      Int    @id @default(autoincrement())
-    action  String
-    resource String
-    roles    Role[]
-  }
+model Department {
+  id              Int               @id @default(autoincrement())
+  name            String
+  companyId       Int
+  company         Company           @relation(fields: [companyId], references: [id])
+  userDepartments UserDepartment[]  // Users in this department
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+// Join table for User-Company relationship with role
+model UserCompany {
+  id              Int               @id @default(autoincrement())
+  userId          Int
+  companyId       Int
+  roleId          Int
+  user            User              @relation(fields: [userId], references: [id])
+  company         Company           @relation(fields: [companyId], references: [id])
+  role            Role              @relation(fields: [roleId], references: [id])
+  userDepartments UserDepartment[]  // Departments within this company assignment
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([userId, companyId])
+}
+
+// Join table for UserCompany-Department relationship with permissions
+model UserDepartment {
+  id              Int               @id @default(autoincrement())
+  userCompanyId   Int
+  departmentId    Int
+  userCompany     UserCompany       @relation(fields: [userCompanyId], references: [id])
+  department      Department        @relation(fields: [departmentId], references: [id])
+  permissions     Permission[]      // Specific permissions for this department
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([userCompanyId, departmentId])
+}
+
+model Role {
+  id              Int               @id @default(autoincrement())
+  name            String            @unique
+  userCompanies   UserCompany[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model Permission {
+  id              Int               @id @default(autoincrement())
+  action          String            // e.g., 'create', 'read', 'update', 'delete'
+  resource        String            // e.g., 'employee_record', 'department', 'company'
+  userDepartments UserDepartment[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([action, resource])
+}
   ```
 
-- Run the initial migration command:
+- Create Initial Migrations for Department-Based Access Control:
 
   ```bash
-  npx prisma migrate dev --name init_rbac
+  npx prisma migrate dev --name init_department_based_access
   ```
 
 ### 7. Generate Additional Migrations
@@ -122,29 +178,101 @@ company-group-portal/
   ```javascript
   const { PrismaClient } = require('@prisma/client');
   const prisma = new PrismaClient();
-
+  
   async function main() {
+    // Create companies
+    const company1 = await prisma.company.create({
+      data: { name: 'Company A' }
+    });
+  
+    const company2 = await prisma.company.create({
+      data: { name: 'Company B' }
+    });
+  
+    // Create departments for both companies
+    const company1ITDept = await prisma.department.create({
+      data: { name: 'IT', companyId: company1.id }
+    });
+  
+    const company1HRDept = await prisma.department.create({
+      data: { name: 'HR', companyId: company1.id }
+    });
+  
+    const company2ITDept = await prisma.department.create({
+      data: { name: 'IT', companyId: company2.id }
+    });
+  
+    // Create roles
     const adminRole = await prisma.role.create({ data: { name: 'admin' } });
     const userRole = await prisma.role.create({ data: { name: 'user' } });
-
-    const permissions = [
-      { action: 'create', resource: 'post' },
-      { action: 'read', resource: 'post' },
-      { action: 'update', resource: 'post' },
-      { action: 'delete', resource: 'post' },
-    ];
-
-    await prisma.permission.createMany({ data: permissions });
-
-    await prisma.user.create({
+  
+    // Create permissions
+    const permissions = await Promise.all([
+      prisma.permission.create({ data: { action: 'create', resource: 'employee_record' } }),
+      prisma.permission.create({ data: { action: 'read', resource: 'employee_record' } }),
+      prisma.permission.create({ data: { action: 'update', resource: 'employee_record' } }),
+      prisma.permission.create({ data: { action: 'delete', resource: 'employee_record' } }),
+    ]);
+  
+    // Create a user with different roles in different companies
+    const user = await prisma.user.create({
       data: {
-        email: 'admin@company.com',
-        password: 'adminpassword',
-        role: { connect: { id: adminRole.id } },
-      },
+        email: 'john.doe@example.com',
+        password: 'hashedpassword', // Remember to hash passwords in production
+      }
+    });
+  
+    // Assign user to Company A as admin
+    const userCompanyA = await prisma.userCompany.create({
+      data: {
+        userId: user.id,
+        companyId: company1.id,
+        roleId: adminRole.id,
+      }
+    });
+  
+    // Assign user to Company B as regular user
+    const userCompanyB = await prisma.userCompany.create({
+      data: {
+        userId: user.id,
+        companyId: company2.id,
+        roleId: userRole.id,
+      }
+    });
+  
+    // Assign department permissions for Company A
+    await prisma.userDepartment.create({
+      data: {
+        userCompanyId: userCompanyA.id,
+        departmentId: company1ITDept.id,
+        permissions: {
+          connect: permissions.map(p => ({ id: p.id })) // All permissions for IT
+        }
+      }
+    });
+  
+    await prisma.userDepartment.create({
+      data: {
+        userCompanyId: userCompanyA.id,
+        departmentId: company1HRDept.id,
+        permissions: {
+          connect: [{ id: permissions[1].id }] // Only read permission for HR
+        }
+      }
+    });
+  
+    // Assign department permissions for Company B
+    await prisma.userDepartment.create({
+      data: {
+        userCompanyId: userCompanyB.id,
+        departmentId: company2ITDept.id,
+        permissions: {
+          connect: [{ id: permissions[1].id }] // Only read permission
+        }
+      }
     });
   }
-
+  
   main()
     .catch((e) => {
       console.error(e);
@@ -173,19 +301,27 @@ company-group-portal/
 
   **cerbos/policies/post.yaml**:
   ```yaml
+  # cerbos/policies/employee_record.yaml
   version: "default"
   scope: "default"
-
-  resource: "post"
-
+  
+  resource: "employee_record"
+  
+  vars:
+    department_permissions: request.resource.attr.department_permissions
+  
   rules:
     - actions: ["create", "read", "update", "delete"]
       roles: ["admin"]
-      effect: "allow"
-
+      condition:
+        match:
+          expr: request.principal.attr.department_id == request.resource.attr.department_id
+  
     - actions: ["read"]
       roles: ["user"]
-      effect: "allow"
+      condition:
+        match:
+          expr: request.principal.attr.department_id == request.resource.attr.department_id
   ```
 
 ### 11. Integrate Cerbos Client
@@ -194,27 +330,107 @@ company-group-portal/
 
   **lib/cerbos.js**:
   ```javascript
+  // lib/cerbos.js
   const { HTTP } = require('@cerbos/http');
   const cerbos = new HTTP('http://localhost:3592');
-
+  
   module.exports = cerbos;
+  
+  // lib/accessControl.js
+  const cerbos = require('./cerbos');
+  const prisma = require('./prisma');
+  
+  async function checkAccess(user, resource, action, resourceId) {
+    // Get department permissions
+    const department = await prisma.department.findUnique({
+      where: { id: user.departmentId },
+      include: { permissions: true }
+    });
+  
+    const decision = await cerbos.check({
+      principal: {
+        id: user.id.toString(),
+        roles: [user.role.name],
+        attr: {
+          department_id: user.departmentId
+        }
+      },
+      resource: {
+        kind: resource,
+        id: resourceId.toString(),
+        attr: {
+          department_id: department.id,
+          department_permissions: department.permissions.map(p => p.action)
+        }
+      },
+      actions: [action]
+    });
+  
+    return decision.isAllowed(action);
+  }
+  
+  module.exports = checkAccess;
   ```
 
 - Add an access control utility (`lib/accessControl.js`) to check permissions.
 
   **lib/accessControl.js**:
   ```javascript
+  // lib/accessControl.js
   const cerbos = require('./cerbos');
-
-  async function checkAccess(user, resource, action) {
-    const decision = await cerbos.check({
-      principal: { id: user.id.toString(), roles: [user.role] },
-      resource: { kind: resource, id: resource },
-      actions: [action],
+  const prisma = require('./prisma');
+  
+  async function checkAccess(userId, companyId, departmentId, resource, action) {
+    // Get user's company association and role
+    const userCompany = await prisma.userCompany.findUnique({
+      where: {
+        userId_companyId: {
+          userId,
+          companyId
+        }
+      },
+      include: {
+        role: true,
+        userDepartments: {
+          where: {
+            departmentId
+          },
+          include: {
+            permissions: true
+          }
+        }
+      }
     });
+  
+    if (!userCompany || !userCompany.userDepartments?.[0]) {
+      return false;
+    }
+  
+    const department = userCompany.userDepartments[0];
+    const decision = await cerbos.check({
+      principal: {
+        id: userId.toString(),
+        roles: [userCompany.role.name],
+        attr: {
+          department_id: departmentId,
+          company_id: companyId
+        }
+      },
+      resource: {
+        kind: resource,
+        id: resource,
+        attr: {
+          department_id: departmentId,
+          company_id: companyId,
+          department_permissions: department.permissions.map(p => p.action)
+        }
+      },
+      actions: [action]
+    });
+  
     return decision.isAllowed(action);
   }
-
+  
   module.exports = checkAccess;
   ```
 
@@ -222,29 +438,44 @@ company-group-portal/
 
 - Use the `checkAccess` utility in your API routes to enforce RBAC.
 
-  **pages/api/posts/[id].js**:
+  **pages/api/employee-records/[id].js**:
   ```javascript
+  // pages/api/companies/[companyId]/departments/[departmentId]/records/[id].js
   import checkAccess from '../../../lib/accessControl';
   import prisma from '../../../lib/prisma';
-
+  
   export default async function handler(req, res) {
-    const { id } = req.query;
-    const user = { id: req.user.id, role: req.user.role }; // Replace with actual user data
-
-    const hasAccess = await checkAccess(user, 'post', 'update');
+    const { companyId, departmentId, id } = req.query;
+    const user = req.user; // Get from your auth solution
+  
+    const hasAccess = await checkAccess(
+      user.id,
+      parseInt(companyId),
+      parseInt(departmentId),
+      'employee_record',
+      'read'
+    );
+  
     if (!hasAccess) {
       return res.status(403).json({ message: 'Forbidden' });
     }
-
-    if (req.method === 'PUT') {
-      const updatedPost = await prisma.post.update({
-        where: { id: parseInt(id, 10) },
-        data: req.body,
-      });
-      res.json(updatedPost);
-    } else {
-      res.status(405).json({ message: 'Method not allowed' });
+  
+    // Proceed with the request
+    const record = await prisma.employeeRecord.findFirst({
+      where: {
+        id: parseInt(id),
+        departmentId: parseInt(departmentId),
+        department: {
+          companyId: parseInt(companyId)
+        }
+      }
+    });
+  
+    if (!record) {
+      return res.status(404).json({ message: 'Record not found' });
     }
+  
+    res.json(record);
   }
   ```
 
@@ -412,5 +643,47 @@ company-group-portal/
        res.status(405).json({ message: "Method not allowed" });
      }
    }
+   ```
+
+6. Add Helper Functions
+
+```javascript
+// lib/userHelpers.js
+async function getUserCompanyPermissions(userId, companyId) {
+  return prisma.userCompany.findUnique({
+    where: {
+      userId_companyId: {
+        userId,
+        companyId
+      }
+    },
+    include: {
+      role: true,
+      userDepartments: {
+        include: {
+          department: true,
+          permissions: true
+        }
+      }
+    }
+  });
+}
+
+async function getAllUserCompanies(userId) {
+  return prisma.userCompany.findMany({
+    where: {
+      userId
+    },
+    include: {
+      company: true,
+      role: true
+    }
+  });
+}
+
+module.exports = {
+  getUserCompanyPermissions,
+  getAllUserCompanies
+};
    ```
 
