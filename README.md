@@ -1,10 +1,5 @@
 # Company Group Portal Backend Documentation
-This document provides a comprehensive overview of the Company Group Portal Backend, detailing its purpose, architecture, setup instructions, testing strategies, and deployment guidelines.
-
-## Table of Contents
-## Project Overview
-## Architecture
-## Setup Instructions
+This document provides a comprehensive overview of the Company Group Portal Backend, detailing its purpose, architecture, setup instructions and deployment guidelines.
 
 # Project Overview
 The Company Group Portal Backend is designed to manage and streamline various administrative and operational tasks within a company. It provides APIs and services to handle user management, role-based access control, data validation, and other core functionalities essential for company operations.
@@ -709,4 +704,39 @@ module.exports = {
   getAllUserCompanies
 };
    ```
+
+### 17.Deployment Guidelines
+To deploy the application to a production environment, follow these steps:
+
+Build the Application:
+
+```bash
+npm run build
+```
+
+Set Environment Variables:
+
+Ensure all necessary environment variables are set in the production environment, including DATABASE_URL and CERBOS_URL.
+
+Start the Application:
+
+```bash
+npm run start
+```
+
+Alternatively, you can use a process manager like PM2 to manage the application process.
+
+Docker Deployment
+
+A docker-compose.yml file is provided for containerized deployment. To deploy using Docker:
+
+Build and Start Containers:
+
+```bash
+docker-compose up --build
+```
+
+Access the Application:
+
+The application will be running at http://localhost:3000.
 
