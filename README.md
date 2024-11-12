@@ -26,14 +26,7 @@ company-group-portal/
 └── README.md              # Project documentation
 ```
 
-### 2. Clone the Repository
-
-```bash
-git clone <repo-url>
-cd company-group-portal
-```
-
-### 3. Install Dependencies
+### 2. Install Dependencies
 
 - Initialize a new Next.js app and install required packages:
 
@@ -42,7 +35,7 @@ cd company-group-portal
   npm install prisma @prisma/client @cerbos/http zod bcrypt @prisma/zod-generator
   ```
 
-### 4. Set Up Environment Variables
+### 3. Set Up Environment Variables
 
 - Create a `.env` file in the root directory with the following variables:
 
@@ -53,7 +46,7 @@ cd company-group-portal
 
 - Replace `user`, `password`, and `company_portal` with your PostgreSQL credentials and database name.
 
-### 5. Initialize Prisma
+### 4. Initialize Prisma
 
 - Run Prisma initialization to set up your Prisma configuration:
 
@@ -61,11 +54,11 @@ cd company-group-portal
   npx prisma init
   ```
 
-### 6. Define Database Models
+### 5. Define Database Models
 
 - Open `prisma/schema.prisma` and define models for users, roles, permissions, etc.
 
-### 7. Create Initial Migrations for RBAC
+### 6. Create Initial Migrations for RBAC
 
 - Define models for roles, users, and permissions in `schema.prisma`:
 
@@ -99,7 +92,7 @@ cd company-group-portal
   npx prisma migrate dev --name init_rbac
   ```
 
-### 8. Generate Additional Migrations
+### 7. Generate Additional Migrations
 
 - Whenever you make changes to your database models, create a new migration to keep the database schema up to date:
 
@@ -107,7 +100,7 @@ cd company-group-portal
   npx prisma migrate dev --name <migration_name>
   ```
 
-### 9. Generate Zod Schemas from Prisma Models
+### 8. Generate Zod Schemas from Prisma Models
 
 - Add Zod generator to `schema.prisma`:
   ```prisma
@@ -121,7 +114,7 @@ cd company-group-portal
   npx prisma generate
   ```
 
-### 10. Seed the Database
+### 9. Seed the Database
 
 - Create a seed file (`prisma/seed.js`) to add initial data (roles, permissions, etc.).
 
@@ -168,7 +161,7 @@ cd company-group-portal
   npm run seed
   ```
 
-### 11. Set Up Cerbos for RBAC
+### 10. Set Up Cerbos for RBAC
 
 - Pull and run the Cerbos Docker container:
 
@@ -195,7 +188,7 @@ cd company-group-portal
       effect: "allow"
   ```
 
-### 12. Integrate Cerbos Client
+### 11. Integrate Cerbos Client
 
 - Create a Cerbos client file (`lib/cerbos.js`) to connect to the Cerbos instance.
 
@@ -225,7 +218,7 @@ cd company-group-portal
   module.exports = checkAccess;
   ```
 
-### 13. Apply Access Control in API Routes
+### 12. Apply Access Control in API Routes
 
 - Use the `checkAccess` utility in your API routes to enforce RBAC.
 
@@ -255,7 +248,7 @@ cd company-group-portal
   }
   ```
 
-### 14. Validate Request Data Using Zod
+### 13. Validate Request Data Using Zod
 
 - Import the generated Zod schemas into your API routes to validate incoming requests:
 
@@ -274,7 +267,7 @@ cd company-group-portal
   }
   ```
 
-### 15. Run the Development Server
+### 14. Run the Development Server
 
 - Start the Next.js development server:
 
@@ -284,7 +277,7 @@ cd company-group-portal
 
 - Visit [http://localhost:3000](http://localhost:3000) to see the app in action.
 
-### 16. Docker Compose Configuration
+### 15. Docker Compose Configuration
 
 - Use Docker Compose to manage PostgreSQL and Cerbos easily. Create a `docker-compose.yml` file to define services for PostgreSQL and Cerbos.
 
@@ -322,7 +315,7 @@ cd company-group-portal
   docker-compose up -d
   ```
 
-### 17. Development Strategy for Implementing an Endpoint
+### 16. Development Strategy for Implementing an Endpoint
 
 1. **Define Database Model (if needed)**: Add new models in `prisma/schema.prisma` and run migration.
 
@@ -334,7 +327,7 @@ cd company-group-portal
 
 5. **Test the Endpoint**: Use tools like **Postman** or **cURL** to test the endpoint.
 
-### 18. Suggestions for Easier Development
+### 17. Suggestions for Easier Development
 
 1. **Use Configuration Templates**: Provide JSON/YAML templates for common configurations to speed up setup. For example, create templates for database settings, companies, and role definitions to simplify configuration.
 
